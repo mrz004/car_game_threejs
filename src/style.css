@@ -1,0 +1,20 @@
+@import "tailwindcss";
+
+/* Full-bleed canvas */
+html,
+body {
+    margin: 0;
+    padding: 0;
+    height: 100%;
+}
+
+body {
+    overflow: hidden;
+    background: #0f0f16;
+}
+
+#canvas {
+    display: block;
+    width: 100vw;
+    height: 100vh;
+}
