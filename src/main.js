@@ -4,7 +4,7 @@ import { buildPlayerCar, spinWheels } from "./playerCar.js";
 import { buildWorld } from "./world.js";
 import { createControls } from "./controls.js";
 import { createChaseCamera } from "./cameraRig.js";
-import { SPEED_MIN } from "./constants.js";
+import { SPEED_MIN, WORLD_SCROLL_DIR } from "./constants.js";
 
 // Canvas
 const canvas = document.getElementById("canvas");
@@ -37,6 +37,16 @@ scene.add(dir);
 
 // World (road, grass, lane markers)
 const world = buildWorld(scene);
+// initialize segment positions (A at 0, B one segment ahead along direction)
+const L = world.length;
+world.roadA.position.z = 0;
+world.roadB.position.z = L * WORLD_SCROLL_DIR;
+world.grassLA.position.z = 0;
+world.grassLB.position.z = L * WORLD_SCROLL_DIR;
+world.grassRA.position.z = 0;
+world.grassRB.position.z = L * WORLD_SCROLL_DIR;
+world.markersA.position.z = 0;
+world.markersB.position.z = L * WORLD_SCROLL_DIR;
 
 // Player car
 const { group: player, wheels: playerWheels } = buildPlayerCar();
@@ -64,7 +74,7 @@ window.addEventListener("resize", onResize);
 
 // Render loop
 let last = performance.now();
-let roadZ = 0; // world scroll amount
+let phase = 0; // 0..L scroll phase independent of direction
 function tick(now) {
     const dt = Math.min((now - last) / 1000, 0.1);
     last = now;
@@ -72,17 +82,22 @@ function tick(now) {
     // Update controls/state
     const { speed } = controls.update(dt, player);
 
-    // Simulate forward movement by scrolling the world back along -Z
-    roadZ -= speed * dt; // forward = -Z in view, so move world back
-    const baseZ = roadZ % 400; // ROAD_LENGTH
-    // Move road/grass/markers to loop visually
-    world.road.position.z = baseZ;
-    world.grassL.position.z = baseZ;
-    world.grassR.position.z = baseZ;
-    world.markers.position.z = baseZ;
+    // Advance phase and position segments based on WORLD_SCROLL_DIR
+    phase = (phase + speed * dt) % L;
+    const aZ = -phase * WORLD_SCROLL_DIR;
+    const bZ = aZ + L * WORLD_SCROLL_DIR;
 
-    // Spin wheels according to speed
-    spinWheels(playerWheels, speed, dt);
+    world.roadA.position.z = aZ;
+    world.roadB.position.z = bZ;
+    world.grassLA.position.z = aZ;
+    world.grassLB.position.z = bZ;
+    world.grassRA.position.z = aZ;
+    world.grassRB.position.z = bZ;
+    world.markersA.position.z = aZ;
+    world.markersB.position.z = bZ;
+
+    // Spin wheels according to speed and direction (reverse flips spin)
+    spinWheels(playerWheels, speed * WORLD_SCROLL_DIR, dt);
 
     // Update chase camera
     chase.update(dt);

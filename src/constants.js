@@ -12,3 +12,7 @@ export const ACCEL_RATE = 12; // units/sec^2
 export const BRAKE_RATE = 18; // units/sec^2
 
 export const LANE_LERP_RATE = 10; // 1/sec  (higher = snappier)
+
+// World scroll direction: +1 moves the road toward the camera (feels like moving forward),
+// -1 moves the road away. Change this to flip direction quickly.
+export const WORLD_SCROLL_DIR = -1;
