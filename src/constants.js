@@ -7,7 +7,7 @@ export const GRASS_WIDTH = 40;
 
 // Movement & feel
 export const SPEED_MIN = 8; // units/sec
-export const SPEED_MAX = 36; // units/sec
+export const SPEED_MAX = 80; // units/sec
 export const ACCEL_RATE = 12; // units/sec^2
 export const BRAKE_RATE = 18; // units/sec^2
 

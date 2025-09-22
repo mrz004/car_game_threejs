@@ -10,7 +10,7 @@ body {
 
 body {
     overflow: hidden;
-    background: #0f0f16;
+    background: #87ceeb; /* match scene sky blue */
 }
 
 #canvas {

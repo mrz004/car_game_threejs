@@ -13,7 +13,7 @@ const canvas = document.getElementById("canvas");
 
 // Scene
 const scene = new THREE.Scene();
-scene.background = new THREE.Color(0x101018);
+scene.background = new THREE.Color(0x87ceeb); // sky blue
 
 // Camera
 const camera = new THREE.PerspectiveCamera(
@@ -66,7 +66,7 @@ const chase = createChaseCamera(camera, player, {
 // HUD and simple game state
 const hud = createHUD();
 let isGameOver = false;
-let elapsed = 0; // seconds
+let score = 0; // event-based score (enemies passed)
 
 // Enemies spawner
 const spawner = createSpawner(scene);
@@ -103,9 +103,9 @@ function tick(now) {
     const { speed } = controls.update(dt, player);
     hud.setSpeed(speed);
 
-    // Time/score update
-    elapsed += dt;
-    hud.setTime(elapsed);
+    // HUD score displays current event-based score
+    // (updated when enemies pass the player below)
+    // hud.setTime(score); // kept in restart and on pass events
 
     // Advance phase and position segments based on WORLD_SCROLL_DIR
     phase = (phase + speed * dt) % L;
@@ -127,6 +127,18 @@ function tick(now) {
     // Update enemies
     spawner.update(dt, player, speed, L, WORLD_SCROLL_DIR);
 
+    // Award score when enemies pass the player
+    spawner.forEachActive(e => {
+        if (e.scored) return;
+        const pz = player.position.z;
+        const ez = e.mesh.position.z;
+        if ((e.dirZ > 0 && ez >= pz) || (e.dirZ < 0 && ez <= pz)) {
+            e.scored = true;
+            score += 1;
+            hud.setTime(score);
+        }
+    });
+
     // Collision detection (AABB)
     let collided = false;
     spawner.forEachActive(e => {
@@ -145,10 +157,10 @@ function tick(now) {
         const shake = 0.15;
         camera.position.x += (Math.random() - 0.5) * shake;
         camera.position.y += (Math.random() - 0.5) * shake;
-        const prev = parseInt(localStorage.getItem("highScoreSec") || "0", 10);
-        const current = Math.floor(elapsed);
+        const prev = parseInt(localStorage.getItem("bestScore") || "0", 10);
+        const current = Math.floor(score);
         const best = Math.max(prev, current);
-        localStorage.setItem("highScoreSec", String(best));
+        localStorage.setItem("bestScore", String(best));
         hud.showGameOver(current, best);
     }
 
@@ -165,7 +177,7 @@ function restart() {
     // Hide overlay & reset flags
     hud.hideGameOver();
     isGameOver = false;
-    elapsed = 0;
+    score = 0;
     hud.setTime(0);
 
     // Reset player position and lane (center)

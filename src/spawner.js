@@ -14,7 +14,7 @@ export function createSpawner(scene) {
     function acquire() {
         if (pool.length > 0) return pool.pop();
         const { group, wheels } = buildEnemyCar();
-        return { mesh: group, wheels, speed: 0, laneIndex: 0 };
+        return { mesh: group, wheels, speed: 0, laneIndex: 0, scored: false };
     }
 
     function release(obj) {
@@ -47,6 +47,7 @@ export function createSpawner(scene) {
         const rel = 0.6 + Math.random() * 0.6; // 0.6..1.2
         obj.speed = playerSpeed * rel + SPEED_MIN * 0.3 + baseSpeedBoost; // units/sec
         obj.laneIndex = laneIdx;
+        obj.scored = false;
 
         scene.add(obj.mesh);
         active.push(obj);
