@@ -60,8 +60,15 @@ export function createHUD() {
     scoreLine.style.fontSize = "18px";
     scoreLine.id = "hud-scoreline";
 
+    const bestLine = document.createElement("div");
+    bestLine.style.marginTop = "6px";
+    bestLine.style.fontSize = "16px";
+    bestLine.style.opacity = "0.9";
+    bestLine.id = "hud-bestline";
+
     panel.appendChild(title);
     panel.appendChild(scoreLine);
+    panel.appendChild(bestLine);
     overlay.appendChild(panel);
     root.appendChild(overlay);
 
@@ -70,10 +77,13 @@ export function createHUD() {
         timer.textContent = `Score: ${secs}`;
     }
 
-    function showGameOver(seconds) {
+    function showGameOver(seconds, bestSeconds) {
         const scoreline = overlay.querySelector("#hud-scoreline");
+        const bestline = overlay.querySelector("#hud-bestline");
         const secs = Math.floor(Math.max(0, seconds));
+        const best = Math.floor(Math.max(secs, bestSeconds ?? secs));
         scoreline.textContent = `Score: ${secs}`;
+        bestline.textContent = `Best: ${best}`;
         overlay.style.visibility = "visible";
     }
 

@@ -140,7 +140,11 @@ function tick(now) {
     });
     if (collided) {
         isGameOver = true;
-        hud.showGameOver(elapsed);
+        const prev = parseInt(localStorage.getItem("highScoreSec") || "0", 10);
+        const current = Math.floor(elapsed);
+        const best = Math.max(prev, current);
+        localStorage.setItem("highScoreSec", String(best));
+        hud.showGameOver(current, best);
     }
 
     // Update chase camera
@@ -150,11 +154,3 @@ function tick(now) {
     requestAnimationFrame(tick);
 }
 requestAnimationFrame(tick);
-
-// TEMP: Press 'g' to simulate game over until collisions are ready
-window.addEventListener("keydown", e => {
-    if (e.key.toLowerCase() === "g" && !isGameOver) {
-        isGameOver = true;
-        hud.showGameOver(elapsed);
-    }
-});
