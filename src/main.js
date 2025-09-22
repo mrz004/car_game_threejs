@@ -7,6 +7,7 @@ import { createChaseCamera } from "./cameraRig.js";
 import { SPEED_MIN, WORLD_SCROLL_DIR } from "./constants.js";
 import { createHUD } from "./hud.js";
 import { createSpawner } from "./spawner.js";
+import { createClouds } from "./clouds.js";
 
 // Canvas
 const canvas = document.getElementById("canvas");
@@ -71,6 +72,15 @@ let score = 0; // event-based score (enemies passed)
 // Enemies spawner
 const spawner = createSpawner(scene);
 
+// Sky clouds
+const clouds = createClouds(scene, {
+    count: 14,
+    xRange: { min: -140, max: 140 },
+    yRange: { min: 12, max: 26 },
+    zRange: { min: -160, max: 60 },
+    baseSpeed: 2.2,
+});
+
 // Collision helpers
 const playerBox = new THREE.Box3();
 const enemyBox = new THREE.Box3();
@@ -126,6 +136,9 @@ function tick(now) {
 
     // Update enemies
     spawner.update(dt, player, speed, L, WORLD_SCROLL_DIR);
+
+    // Update clouds (slight parallax with player speed)
+    clouds.update(dt, speed);
 
     // Award score when enemies pass the player
     spawner.forEachActive(e => {
@@ -198,6 +211,8 @@ function restart() {
 
     // Reset spawner/enemies
     spawner.reset();
+    // Reset clouds
+    clouds.reset();
 }
 
 hud.onRestart(restart);
