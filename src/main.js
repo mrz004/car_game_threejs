@@ -5,6 +5,7 @@ import { buildWorld } from "./world.js";
 import { createControls } from "./controls.js";
 import { createChaseCamera } from "./cameraRig.js";
 import { SPEED_MIN, WORLD_SCROLL_DIR } from "./constants.js";
+import { createHUD } from "./hud.js";
 
 // Canvas
 const canvas = document.getElementById("canvas");
@@ -61,6 +62,11 @@ const chase = createChaseCamera(camera, player, {
     lerp: 5.0,
 });
 
+// HUD and simple game state
+const hud = createHUD();
+let isGameOver = false;
+let elapsed = 0; // seconds
+
 // Resize handling
 function onResize() {
     const w = window.innerWidth;
@@ -79,8 +85,18 @@ function tick(now) {
     const dt = Math.min((now - last) / 1000, 0.1);
     last = now;
 
+    if (isGameOver) {
+        renderer.render(scene, camera);
+        requestAnimationFrame(tick);
+        return;
+    }
+
     // Update controls/state
     const { speed } = controls.update(dt, player);
+
+    // Time/score update
+    elapsed += dt;
+    hud.setTime(elapsed);
 
     // Advance phase and position segments based on WORLD_SCROLL_DIR
     phase = (phase + speed * dt) % L;
@@ -106,3 +122,11 @@ function tick(now) {
     requestAnimationFrame(tick);
 }
 requestAnimationFrame(tick);
+
+// TEMP: Press 'g' to simulate game over until collisions are ready
+window.addEventListener("keydown", e => {
+    if (e.key.toLowerCase() === "g" && !isGameOver) {
+        isGameOver = true;
+        hud.showGameOver(elapsed);
+    }
+});
