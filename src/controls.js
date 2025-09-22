@@ -92,10 +92,7 @@ export function createControls() {
                 ? BRAKE_RATE
                 : ACCEL_RATE * 0.6;
         state.speed += state.accelInput * rate * dt;
-        state.speed = Math.min(
-            SPEED_MAX,
-            Math.max(SPEED_MIN * 0.5, state.speed)
-        );
+        state.speed = Math.min(SPEED_MAX, Math.max(SPEED_MIN, state.speed));
 
         // Lane lerp (smooth)
         const targetX = LANES[state.targetLaneIndex + 1]; // because lanes are [-L,0,+L]
