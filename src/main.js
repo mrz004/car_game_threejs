@@ -154,3 +154,39 @@ function tick(now) {
     requestAnimationFrame(tick);
 }
 requestAnimationFrame(tick);
+
+// Restart logic
+function restart() {
+    // Hide overlay & reset flags
+    hud.hideGameOver();
+    isGameOver = false;
+    elapsed = 0;
+    hud.setTime(0);
+
+    // Reset player position and lane (center)
+    player.position.set(0, 0, 10);
+
+    // Reset world scroll phase and segment positions
+    phase = 0;
+    const aZ0 = 0;
+    const bZ0 = L * WORLD_SCROLL_DIR;
+    world.roadA.position.z = aZ0;
+    world.roadB.position.z = bZ0;
+    world.grassLA.position.z = aZ0;
+    world.grassLB.position.z = bZ0;
+    world.grassRA.position.z = aZ0;
+    world.grassRB.position.z = bZ0;
+    world.markersA.position.z = aZ0;
+    world.markersB.position.z = bZ0;
+
+    // Reset spawner/enemies
+    spawner.reset();
+}
+
+hud.onRestart(restart);
+
+window.addEventListener("keydown", e => {
+    if (isGameOver && (e.key === " " || e.key === "Enter")) {
+        restart();
+    }
+});

@@ -69,6 +69,19 @@ export function createHUD() {
     panel.appendChild(title);
     panel.appendChild(scoreLine);
     panel.appendChild(bestLine);
+
+    const restartBtn = document.createElement("button");
+    restartBtn.textContent = "Restart";
+    restartBtn.style.marginTop = "14px";
+    restartBtn.style.padding = "10px 16px";
+    restartBtn.style.borderRadius = "8px";
+    restartBtn.style.border = "1px solid rgba(255,255,255,0.2)";
+    restartBtn.style.background = "#3b82f6";
+    restartBtn.style.color = "#fff";
+    restartBtn.style.fontWeight = "700";
+    restartBtn.style.cursor = "pointer";
+    restartBtn.style.pointerEvents = "auto";
+    panel.appendChild(restartBtn);
     overlay.appendChild(panel);
     root.appendChild(overlay);
 
@@ -91,5 +104,9 @@ export function createHUD() {
         overlay.style.visibility = "hidden";
     }
 
-    return { setTime, showGameOver, hideGameOver };
+    function onRestart(cb) {
+        restartBtn.onclick = () => cb && cb();
+    }
+
+    return { setTime, showGameOver, hideGameOver, onRestart };
 }

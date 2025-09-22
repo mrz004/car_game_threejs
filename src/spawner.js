@@ -82,5 +82,17 @@ export function createSpawner(scene) {
         for (const e of active) fn(e);
     }
 
-    return { update, forEachActive };
+    function reset() {
+        // remove active enemies from scene and return to pool
+        for (let i = active.length - 1; i >= 0; i--) {
+            const e = active[i];
+            scene.remove(e.mesh);
+            pool.push(e);
+        }
+        active.length = 0;
+        time = 0;
+        nextSpawn = 1.2;
+    }
+
+    return { update, forEachActive, reset };
 }
