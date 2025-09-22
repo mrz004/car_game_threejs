@@ -1,15 +1,22 @@
 import * as THREE from "three";
-import { LANES, SPEED_MIN } from "./constants.js";
+import {
+    LANES,
+    CAR_LENGTH,
+    AVG_SPEED,
+    ENEMY_SPAWN_DISTANCE,
+} from "./constants.js";
 import { buildEnemyCar } from "./enemyCar.js";
+// import { GlobalControls } from "./main.js"; // unused here
 
 export function createSpawner(scene) {
     const pool = [];
     const active = [];
-    const tmp = new THREE.Box3();
+    // const tmp = new THREE.Box3(); // currently unused
 
     let time = 0;
-    let nextSpawn = 1.2; // seconds until next spawn
-    let baseSpeedBoost = 0; // increases slowly over time
+    let nextSpawn = 1.2; // legacy timer (not used after distance-based change)
+    let baseSpeedBoost = 0; // increases slowly over time (kept for compatibility)
+    let distanceAccumulator = ENEMY_SPAWN_DISTANCE; // seed so one spawns immediately
 
     function acquire() {
         if (pool.length > 0) return pool.pop();
@@ -23,29 +30,59 @@ export function createSpawner(scene) {
     }
 
     function scheduleNext(t) {
-        // Difficulty ramp: spawn rate increases slightly over time
-        const base = 1.1;
-        const minIvl = 0.4;
-        const ramp = Math.max(minIvl, base - 0.012 * t);
-        nextSpawn = ramp * (0.8 + Math.random() * 0.4); // add some jitter
+        // Timer-based schedule no longer used; kept to avoid breaking references
+        nextSpawn = 9999; // effectively disable time-based spawn
+    }
+
+    // Ensure at least one-car gap on Z against all active enemies in the same lane
+    function adjustZForSpacing(laneIdx, initialZ) {
+        const minGap = CAR_LENGTH * 1.2; // safety margin
+        let z = initialZ;
+        // Iterate until no conflicts or max iterations to avoid infinite loops
+        for (let iter = 0; iter < 8; iter++) {
+            let moved = false;
+            for (let i = 0; i < active.length; i++) {
+                const e = active[i];
+                if (e.laneIndex !== laneIdx) continue;
+                const ez = e.mesh.position.z;
+                const diff = Math.abs(z - ez);
+                if (diff < minGap) {
+                    // Push further ahead (more negative Z) to keep spacing
+                    z = Math.min(z, ez) - (minGap - diff);
+                    moved = true;
+                }
+            }
+            if (!moved) break;
+        }
+        return z;
     }
 
     function spawn(playerZ, playerSpeed, laneIdx) {
         const obj = acquire();
-        if (laneIdx === undefined) laneIdx = -1 + Math.floor(Math.random() * 3); // -1,0,1
+        if (laneIdx === undefined) laneIdx = -1 + Math.floor(Math.random() * 3); // random lane: -1,0,1
         const x = LANES[laneIdx + 1];
 
-        // Place ahead depending on camera/player forward direction
-        const zStart = playerZ - 80 - Math.random() * 40; // spawn forward (negative Z ahead when camera looks -Z)
+        // Place at a fixed offset ahead of the player so cars enter the scene naturally
+        let zStart = playerZ - 80 - Math.random() * 20; // slight jitter to avoid uniformity
+
+        // Ensure no two cars share the same Z (across all lanes)
+        const zEpsilon = 0.01;
+        let adjustCount = 0;
+        while (
+            active.some(e => Math.abs(e.mesh.position.z - zStart) < zEpsilon) &&
+            adjustCount < 10
+        ) {
+            zStart -= CAR_LENGTH * 0.5; // nudge further ahead until unique
+            adjustCount++;
+        }
         obj.mesh.position.set(x, 0, zStart);
 
         // Movement direction toward player at spawn (keep constant so it passes by)
         obj.dirZ = Math.sign(playerZ - zStart) || 1; // +1 moves toward +Z, -1 toward -Z
         obj.mesh.rotation.y = obj.dirZ > 0 ? 0 : Math.PI;
 
-        // Speed relative to player (approach)
-        const rel = 0.6 + Math.random() * 0.6; // 0.6..1.2
-        obj.speed = playerSpeed * rel + SPEED_MIN * 0.3 + baseSpeedBoost; // units/sec
+        // Fixed enemy speed per request
+        obj.speed = AVG_SPEED;
         obj.laneIndex = laneIdx;
         obj.scored = false;
 
@@ -55,22 +92,14 @@ export function createSpawner(scene) {
 
     function update(dt, player, playerSpeed, worldLength, scrollDir) {
         time += dt;
-        nextSpawn -= dt;
-        if (nextSpawn <= 0) {
-            // Occasionally spawn two enemies in different lanes
-            const double = Math.random() < Math.min(0.35, 0.08 + time * 0.02);
-            if (double) {
-                const firstLane = -1 + Math.floor(Math.random() * 3);
-                let secondLane = firstLane;
-                // pick a different lane
-                while (secondLane === firstLane)
-                    secondLane = -1 + Math.floor(Math.random() * 3);
-                spawn(player.position.z, playerSpeed, firstLane);
-                spawn(player.position.z - 10, playerSpeed, secondLane); // small stagger to avoid boxed-in wall
-            } else {
-                spawn(player.position.z, playerSpeed);
-            }
-            scheduleNext(time);
+
+        // Distance-based spawning using player's speed magnitude
+        // This works even if player.position.z stays constant (world scrolling)
+        const speed = Math.abs(playerSpeed) || 0;
+        distanceAccumulator += speed * dt;
+        while (distanceAccumulator >= ENEMY_SPAWN_DISTANCE) {
+            spawn(player.position.z, playerSpeed);
+            distanceAccumulator -= ENEMY_SPAWN_DISTANCE;
         }
 
         // Move enemies along their fixed direction
@@ -91,6 +120,20 @@ export function createSpawner(scene) {
             }
         }
 
+        // Ensure unique Z levels at runtime as well (across all cars)
+        // If any two cars end up at the same Z (rare), nudge later ones slightly
+        const zEpsilon = 0.001;
+        const seenZ = new Set();
+        for (let i = 0; i < active.length; i++) {
+            const e = active[i];
+            let key = Math.round(e.mesh.position.z / zEpsilon);
+            while (seenZ.has(key)) {
+                e.mesh.position.z -= zEpsilon; // small nudge ahead
+                key = Math.round(e.mesh.position.z / zEpsilon);
+            }
+            seenZ.add(key);
+        }
+
         // Increase difficulty slowly
         baseSpeedBoost = Math.min(8, time * 0.15);
     }
@@ -109,6 +152,7 @@ export function createSpawner(scene) {
         active.length = 0;
         time = 0;
         nextSpawn = 1.2;
+        distanceAccumulator = ENEMY_SPAWN_DISTANCE; // force a spawn immediately after reset
         baseSpeedBoost = 0;
     }
 

@@ -12,7 +12,7 @@ export function createControls() {
     const state = {
         laneIndex: 0, // -1, 0, 1
         targetLaneIndex: 0,
-        speed: SPEED_MIN, // units/sec
+        speed: 30, // SPEED_MIN, // units/sec
         accelInput: 0, // -1..+1
         leftPressed: false,
         rightPressed: false,
@@ -44,7 +44,7 @@ export function createControls() {
             case "s":
             case "S":
                 state.downPressed = true;
-                state.accelInput = -1;
+                state.accelInput = -10;
                 break;
             default:
                 break;

@@ -64,6 +64,8 @@ const chase = createChaseCamera(camera, player, {
     lerp: 5.0,
 });
 
+export const GlobalControls = controls; // for debug
+
 // HUD and simple game state
 const hud = createHUD();
 let isGameOver = false;
