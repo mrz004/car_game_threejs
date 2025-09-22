@@ -6,6 +6,7 @@ import { createControls } from "./controls.js";
 import { createChaseCamera } from "./cameraRig.js";
 import { SPEED_MIN, WORLD_SCROLL_DIR } from "./constants.js";
 import { createHUD } from "./hud.js";
+import { createSpawner } from "./spawner.js";
 
 // Canvas
 const canvas = document.getElementById("canvas");
@@ -67,6 +68,9 @@ const hud = createHUD();
 let isGameOver = false;
 let elapsed = 0; // seconds
 
+// Enemies spawner
+const spawner = createSpawner(scene);
+
 // Resize handling
 function onResize() {
     const w = window.innerWidth;
@@ -114,6 +118,9 @@ function tick(now) {
 
     // Spin wheels according to speed and direction (reverse flips spin)
     spinWheels(playerWheels, speed * WORLD_SCROLL_DIR, dt);
+
+    // Update enemies
+    spawner.update(dt, player, speed, L, WORLD_SCROLL_DIR);
 
     // Update chase camera
     chase.update(dt);
