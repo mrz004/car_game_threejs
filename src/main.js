@@ -71,6 +71,10 @@ let elapsed = 0; // seconds
 // Enemies spawner
 const spawner = createSpawner(scene);
 
+// Collision helpers
+const playerBox = new THREE.Box3();
+const enemyBox = new THREE.Box3();
+
 // Resize handling
 function onResize() {
     const w = window.innerWidth;
@@ -121,6 +125,23 @@ function tick(now) {
 
     // Update enemies
     spawner.update(dt, player, speed, L, WORLD_SCROLL_DIR);
+
+    // Collision detection (AABB)
+    let collided = false;
+    spawner.forEachActive(e => {
+        // Cheap broad-phase on Z to reduce Box3 work
+        if (Math.abs(e.mesh.position.z - player.position.z) < 3.2) {
+            playerBox.setFromObject(player).expandByScalar(-0.04);
+            enemyBox.setFromObject(e.mesh).expandByScalar(-0.04);
+            if (playerBox.intersectsBox(enemyBox)) {
+                collided = true;
+            }
+        }
+    });
+    if (collided) {
+        isGameOver = true;
+        hud.showGameOver(elapsed);
+    }
 
     // Update chase camera
     chase.update(dt);
