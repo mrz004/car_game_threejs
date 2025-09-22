@@ -9,6 +9,7 @@ export function createSpawner(scene) {
 
     let time = 0;
     let nextSpawn = 1.2; // seconds until next spawn
+    let baseSpeedBoost = 0; // increases slowly over time
 
     function acquire() {
         if (pool.length > 0) return pool.pop();
@@ -24,14 +25,14 @@ export function createSpawner(scene) {
     function scheduleNext(t) {
         // Difficulty ramp: spawn rate increases slightly over time
         const base = 1.1;
-        const minIvl = 0.45;
-        const ramp = Math.max(minIvl, base - 0.01 * t);
+        const minIvl = 0.4;
+        const ramp = Math.max(minIvl, base - 0.012 * t);
         nextSpawn = ramp * (0.8 + Math.random() * 0.4); // add some jitter
     }
 
-    function spawn(playerZ, playerSpeed) {
+    function spawn(playerZ, playerSpeed, laneIdx) {
         const obj = acquire();
-        const laneIdx = -1 + Math.floor(Math.random() * 3); // -1,0,1
+        if (laneIdx === undefined) laneIdx = -1 + Math.floor(Math.random() * 3); // -1,0,1
         const x = LANES[laneIdx + 1];
 
         // Place ahead depending on camera/player forward direction
@@ -44,7 +45,7 @@ export function createSpawner(scene) {
 
         // Speed relative to player (approach)
         const rel = 0.6 + Math.random() * 0.6; // 0.6..1.2
-        obj.speed = playerSpeed * rel + SPEED_MIN * 0.3; // units/sec
+        obj.speed = playerSpeed * rel + SPEED_MIN * 0.3 + baseSpeedBoost; // units/sec
         obj.laneIndex = laneIdx;
 
         scene.add(obj.mesh);
@@ -55,7 +56,19 @@ export function createSpawner(scene) {
         time += dt;
         nextSpawn -= dt;
         if (nextSpawn <= 0) {
-            spawn(player.position.z, playerSpeed);
+            // Occasionally spawn two enemies in different lanes
+            const double = Math.random() < Math.min(0.35, 0.08 + time * 0.02);
+            if (double) {
+                const firstLane = -1 + Math.floor(Math.random() * 3);
+                let secondLane = firstLane;
+                // pick a different lane
+                while (secondLane === firstLane)
+                    secondLane = -1 + Math.floor(Math.random() * 3);
+                spawn(player.position.z, playerSpeed, firstLane);
+                spawn(player.position.z - 10, playerSpeed, secondLane); // small stagger to avoid boxed-in wall
+            } else {
+                spawn(player.position.z, playerSpeed);
+            }
             scheduleNext(time);
         }
 
@@ -76,6 +89,9 @@ export function createSpawner(scene) {
                 release(e);
             }
         }
+
+        // Increase difficulty slowly
+        baseSpeedBoost = Math.min(8, time * 0.15);
     }
 
     function forEachActive(fn) {
@@ -92,6 +108,7 @@ export function createSpawner(scene) {
         active.length = 0;
         time = 0;
         nextSpawn = 1.2;
+        baseSpeedBoost = 0;
     }
 
     return { update, forEachActive, reset };

@@ -101,6 +101,7 @@ function tick(now) {
 
     // Update controls/state
     const { speed } = controls.update(dt, player);
+    hud.setSpeed(speed);
 
     // Time/score update
     elapsed += dt;
@@ -140,6 +141,10 @@ function tick(now) {
     });
     if (collided) {
         isGameOver = true;
+        // Small camera shake effect
+        const shake = 0.15;
+        camera.position.x += (Math.random() - 0.5) * shake;
+        camera.position.y += (Math.random() - 0.5) * shake;
         const prev = parseInt(localStorage.getItem("highScoreSec") || "0", 10);
         const current = Math.floor(elapsed);
         const best = Math.max(prev, current);

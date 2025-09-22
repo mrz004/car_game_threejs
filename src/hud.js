@@ -29,6 +29,21 @@ export function createHUD() {
     timer.textContent = "Score: 0";
     root.appendChild(timer);
 
+    // Speed (top-right)
+    const speed = document.createElement("div");
+    speed.id = "hud-speed";
+    speed.style.position = "absolute";
+    speed.style.top = "12px";
+    speed.style.right = "16px";
+    speed.style.color = "#ffffff";
+    speed.style.fontFamily =
+        "ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Ubuntu, Cantarell";
+    speed.style.fontSize = "18px";
+    speed.style.fontWeight = "600";
+    speed.style.textShadow = "0 1px 2px rgba(0,0,0,0.6)";
+    speed.textContent = "Speed: 0";
+    root.appendChild(speed);
+
     // Game Over overlay (center)
     const overlay = document.createElement("div");
     overlay.id = "hud-gameover";
@@ -108,5 +123,10 @@ export function createHUD() {
         restartBtn.onclick = () => cb && cb();
     }
 
-    return { setTime, showGameOver, hideGameOver, onRestart };
+    function setSpeed(val) {
+        const v = Math.max(0, Math.round(val));
+        speed.textContent = `Speed: ${v}`;
+    }
+
+    return { setTime, showGameOver, hideGameOver, onRestart, setSpeed };
 }
